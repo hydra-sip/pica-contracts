@@ -24,6 +24,12 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice El monto de la carga o del retiro es 0.
     error MontoCero();
 
+    /// @notice La carga no tiene referencia.
+    error ReferenciaVacia();
+
+    /// @notice La referencia ya fue pagada.
+    error ReferenciaYaPagada(bytes32 referencia);
+
     /// @notice El destino de un retiro es la dirección cero.
     error DestinoInvalido();
 
@@ -33,10 +39,16 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice El destino rechazó la transferencia del retiro.
     error TransferenciaFallida();
 
+    /// @notice Llegó ETH sin pasar por `cargar`, así que no se puede asociar a ninguna carga.
+    error PagoSinReferencia();
+
     constructor(address dueno) Ownable(dueno) {}
 
     /// @notice Paga la carga identificada por `referencia` con el ETH enviado.
     function cargar(bytes32 referencia) external payable nonReentrant {
+        if (msg.value == 0) revert MontoCero();
+        if (referencia == bytes32(0)) revert ReferenciaVacia();
+        if (pagada[referencia]) revert ReferenciaYaPagada(referencia);
         pagada[referencia] = true;
         emit CargaRegistrada(referencia, msg.sender, msg.value);
     }
@@ -49,5 +61,15 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
         emit FondosRetirados(destino, monto);
         (bool ok,) = destino.call{value: monto}("");
         if (!ok) revert TransferenciaFallida();
+    }
+
+    /// @dev Rechaza el ETH enviado sin referencia.
+    receive() external payable {
+        revert PagoSinReferencia();
+    }
+
+    /// @dev Rechaza cualquier llamada desconocida, con o sin ETH.
+    fallback() external payable {
+        revert PagoSinReferencia();
     }
 }

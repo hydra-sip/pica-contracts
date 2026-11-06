@@ -38,12 +38,14 @@ contract PasarelaCargasTest is Test {
     address internal dueno = makeAddr("dueno");
     address internal pagador = makeAddr("pagador");
     address internal tesoreria = makeAddr("tesoreria");
+    address internal otroPagador = makeAddr("otroPagador");
 
     bytes32 internal constant REFERENCIA = keccak256("carga-1");
 
     function setUp() public {
         pasarela = new PasarelaCargas(dueno);
         vm.deal(pagador, 10 ether);
+        vm.deal(otroPagador, 10 ether);
     }
 
     function test_cargar_registraElPagoYEmiteElEvento() public {
@@ -201,5 +203,101 @@ contract PasarelaCargasTest is Test {
 
         assertEq(tesoreria.balance, monto);
         assertEq(address(pasarela).balance, cargado - monto);
+    }
+
+    function test_cargar_conMontoCeroRevierte() public {
+        vm.expectRevert(PasarelaCargas.MontoCero.selector);
+        _cargar(REFERENCIA, 0);
+
+        assertFalse(pasarela.pagada(REFERENCIA));
+    }
+
+    function test_cargar_conReferenciaVaciaRevierte() public {
+        vm.expectRevert(PasarelaCargas.ReferenciaVacia.selector);
+        _cargar(bytes32(0), 1 ether);
+    }
+
+    function test_cargar_unaReferenciaYaPagadaRevierteAunqueCambienPagadorYMonto() public {
+        _cargar(REFERENCIA, 1 ether);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(PasarelaCargas.ReferenciaYaPagada.selector, REFERENCIA)
+        );
+        vm.prank(otroPagador);
+        pasarela.cargar{value: 2 ether}(REFERENCIA);
+
+        assertEq(address(pasarela).balance, 1 ether);
+        assertEq(otroPagador.balance, 10 ether);
+    }
+
+    function test_cargar_otroPagadorPuedePagarOtraReferencia() public {
+        _cargar(REFERENCIA, 1 ether);
+        bytes32 otraReferencia = keccak256("carga-2");
+
+        vm.prank(otroPagador);
+        pasarela.cargar{value: 2 ether}(otraReferencia);
+
+        assertTrue(pasarela.pagada(otraReferencia));
+        assertEq(address(pasarela).balance, 3 ether);
+    }
+
+    function test_ethSinDatosRevierte() public {
+        vm.prank(pagador);
+        (bool ok, bytes memory error_) = address(pasarela).call{value: 1 ether}("");
+
+        assertFalse(ok);
+        assertEq(error_, abi.encodeWithSelector(PasarelaCargas.PagoSinReferencia.selector));
+        assertEq(address(pasarela).balance, 0);
+    }
+
+    function test_ethConDatosDesconocidosRevierte() public {
+        vm.prank(pagador);
+        (bool ok, bytes memory error_) =
+            address(pasarela).call{value: 1 ether}(abi.encodeWithSignature("depositar()"));
+
+        assertFalse(ok);
+        assertEq(error_, abi.encodeWithSelector(PasarelaCargas.PagoSinReferencia.selector));
+        assertEq(address(pasarela).balance, 0);
+    }
+
+    function testFuzz_cargar_registraCualquierMontoYReferenciaValidos(
+        address quien,
+        bytes32 referencia,
+        uint256 monto
+    ) public {
+        vm.assume(referencia != bytes32(0));
+        vm.assume(quien != address(0) && quien != address(pasarela));
+        assumeNotPrecompile(quien);
+        assumeNotForgeAddress(quien);
+        monto = bound(monto, 1, 1000 ether);
+        vm.deal(quien, monto);
+
+        vm.expectEmit(true, true, false, true, address(pasarela));
+        emit CargaRegistrada(referencia, quien, monto);
+
+        vm.prank(quien);
+        pasarela.cargar{value: monto}(referencia);
+
+        assertTrue(pasarela.pagada(referencia));
+        assertEq(address(pasarela).balance, monto);
+    }
+
+    function testFuzz_cargar_laMismaReferenciaNuncaSePagaDosVeces(
+        bytes32 referencia,
+        uint256 primerMonto,
+        uint256 segundoMonto
+    ) public {
+        vm.assume(referencia != bytes32(0));
+        primerMonto = bound(primerMonto, 1, 5 ether);
+        segundoMonto = bound(segundoMonto, 1, 5 ether);
+        _cargar(referencia, primerMonto);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(PasarelaCargas.ReferenciaYaPagada.selector, referencia)
+        );
+        vm.prank(otroPagador);
+        pasarela.cargar{value: segundoMonto}(referencia);
+
+        assertEq(address(pasarela).balance, primerMonto);
     }
 }
