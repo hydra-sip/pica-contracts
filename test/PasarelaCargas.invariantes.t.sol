@@ -3,6 +3,7 @@ pragma solidity 0.8.38;
 
 import {Test} from "forge-std/Test.sol";
 import {PasarelaCargas} from "../src/PasarelaCargas.sol";
+import {EscenarioPasarela} from "./utils/EscenarioPasarela.sol";
 
 /// @dev Opera la pasarela como lo harían los pagadores y el dueño, y lleva la cuenta de lo que
 /// pasó para que el test de invariantes la compare con lo que dice el contrato.
@@ -66,13 +67,11 @@ contract OperadorDeLaPasarela is Test {
     }
 }
 
-contract PasarelaCargasInvariantesTest is Test {
-    PasarelaCargas internal pasarela;
+contract PasarelaCargasInvariantesTest is EscenarioPasarela {
     OperadorDeLaPasarela internal operador;
 
-    function setUp() public {
-        address dueno = makeAddr("dueno");
-        pasarela = new PasarelaCargas(dueno);
+    function setUp() public override {
+        super.setUp();
         operador = new OperadorDeLaPasarela(pasarela, dueno);
         targetContract(address(operador));
     }

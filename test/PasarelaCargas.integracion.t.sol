@@ -1,37 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.38;
 
-import {Test} from "forge-std/Test.sol";
 import {PasarelaCargas} from "../src/PasarelaCargas.sol";
+import {EscenarioPasarela} from "./utils/EscenarioPasarela.sol";
+import {DestinoQueReentraEnCargar} from "./utils/Atacantes.sol";
 
-/// @dev Destino de una devolución que, al recibirla, intenta pagar una carga con ese mismo ETH.
-contract DestinoQueReentraEnCargar {
-    PasarelaCargas internal immutable pasarela;
-    bytes32 public constant REFERENCIA = keccak256("carga-del-atacante");
+contract PasarelaCargasIntegracionTest is EscenarioPasarela {
+    address internal ana;
+    address internal bruno;
+    address internal carla;
 
-    constructor(PasarelaCargas pasarela_) {
-        pasarela = pasarela_;
-    }
-
-    receive() external payable {
-        pasarela.cargar{value: msg.value}(REFERENCIA);
-    }
-}
-
-contract PasarelaCargasIntegracionTest is Test {
-    PasarelaCargas internal pasarela;
-
-    address internal dueno = makeAddr("dueno");
-    address internal tesoreria = makeAddr("tesoreria");
-    address internal ana = makeAddr("ana");
-    address internal bruno = makeAddr("bruno");
-    address internal carla = makeAddr("carla");
-
-    function setUp() public {
-        pasarela = new PasarelaCargas(dueno);
-        vm.deal(ana, 10 ether);
-        vm.deal(bruno, 10 ether);
-        vm.deal(carla, 10 ether);
+    function setUp() public override {
+        super.setUp();
+        ana = _nuevoPagador("ana");
+        bruno = _nuevoPagador("bruno");
+        carla = _nuevoPagador("carla");
     }
 
     function test_variosPagadoresYRetirosParcialesCuadran() public {
@@ -39,12 +22,9 @@ contract PasarelaCargasIntegracionTest is Test {
         bytes32 cargaBruno = keccak256("carga-bruno");
         bytes32 otraCargaAna = keccak256("otra-carga-ana");
 
-        vm.prank(ana);
-        pasarela.cargar{value: 1 ether}(cargaAna);
-        vm.prank(bruno);
-        pasarela.cargar{value: 2.5 ether}(cargaBruno);
-        vm.prank(ana);
-        pasarela.cargar{value: 0.5 ether}(otraCargaAna);
+        _cargarDesde(ana, cargaAna, 1 ether);
+        _cargarDesde(bruno, cargaBruno, 2.5 ether);
+        _cargarDesde(ana, otraCargaAna, 0.5 ether);
 
         vm.startPrank(dueno);
         pasarela.retirar(payable(tesoreria), 3 ether);
@@ -65,8 +45,7 @@ contract PasarelaCargasIntegracionTest is Test {
 
     function test_unaDevolucionNoPuedeReentrarEnCargar() public {
         DestinoQueReentraEnCargar atacante = new DestinoQueReentraEnCargar(pasarela);
-        vm.prank(ana);
-        pasarela.cargar{value: 1 ether}(keccak256("carga-ana"));
+        _cargarDesde(ana, keccak256("carga-ana"), 1 ether);
 
         vm.expectRevert(PasarelaCargas.TransferenciaFallida.selector);
         vm.prank(dueno);
