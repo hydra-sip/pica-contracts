@@ -76,6 +76,34 @@ slither . --filter-paths "lib/|test/|script/" --fail-medium
 
 El CI falla con cualquier hallazgo Medium o High. Si aparece un falso positivo, se suprime en la línea con `// slither-disable-next-line <detector>` y un comentario que explique por qué, y se menciona en el PR.
 
+## Deploy en Base Sepolia
+
+El deploy es manual, desde la máquina de quien despliega, nunca desde el CI.
+
+1. Importar la clave del deployer en un keystore cifrado de Foundry. La clave nunca va al `.env` ni al repo:
+
+   ```sh
+   cast wallet import deployer --interactive
+   ```
+
+2. Copiar `.env.example` a `.env` y completar el RPC de Base Sepolia, la API key v2 de Etherscan (sirve para BaseScan) y, si el dueño no es el deployer, `OWNER`.
+
+3. Cargar las variables y desplegar con verificación:
+
+   ```sh
+   source .env
+   forge script script/Deploy.s.sol --rpc-url base_sepolia --account deployer --broadcast --verify
+   ```
+
+   El script pide la contraseña del keystore. El dueño inicial es `OWNER` si está definida y no vacía, y si no, la cuenta `deployer`.
+
+4. Si la verificación automática falla, verificar a mano:
+
+   ```sh
+   forge verify-contract <direccion> src/PasarelaCargas.sol:PasarelaCargas \
+     --chain 84532 --constructor-args $(cast abi-encode "constructor(address)" <dueno>) --watch
+   ```
+
 ## Ramas
 
 Las ramas `PICA-xxx` salen de `dev` y los PRs van contra `dev`, que exige el CI en verde y una aprobación. `main` solo recibe entregas.
