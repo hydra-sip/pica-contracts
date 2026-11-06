@@ -45,7 +45,7 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
     constructor(address dueno) Ownable(dueno) {}
 
     /// @notice Paga la carga identificada por `referencia` con el ETH enviado.
-    function cargar(bytes32 referencia) external payable nonReentrant {
+    function cargar(bytes32 referencia) external payable whenNotPaused nonReentrant {
         if (msg.value == 0) revert MontoCero();
         if (referencia == bytes32(0)) revert ReferenciaVacia();
         if (pagada[referencia]) revert ReferenciaYaPagada(referencia);
@@ -61,6 +61,16 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
         emit FondosRetirados(destino, monto);
         (bool ok,) = destino.call{value: monto}("");
         if (!ok) revert TransferenciaFallida();
+    }
+
+    /// @notice Frena los pagos ante una emergencia. Los retiros siguen funcionando.
+    function pausar() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Vuelve a aceptar pagos.
+    function reanudar() external onlyOwner {
+        _unpause();
     }
 
     /// @dev Rechaza el ETH enviado sin referencia.

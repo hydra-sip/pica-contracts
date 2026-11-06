@@ -3,6 +3,7 @@ pragma solidity 0.8.38;
 
 import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {PasarelaCargas} from "../src/PasarelaCargas.sol";
 
 /// @dev Destino sin `receive` ni `fallback`: rechaza cualquier ETH.
@@ -299,5 +300,73 @@ contract PasarelaCargasTest is Test {
         pasarela.cargar{value: segundoMonto}(referencia);
 
         assertEq(address(pasarela).balance, primerMonto);
+    }
+
+    function test_pausar_frenaLasCargas() public {
+        vm.expectEmit(false, false, false, true, address(pasarela));
+        emit Pausable.Paused(dueno);
+        vm.prank(dueno);
+        pasarela.pausar();
+
+        assertTrue(pasarela.paused());
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        _cargar(REFERENCIA, 1 ether);
+        assertFalse(pasarela.pagada(REFERENCIA));
+        assertEq(pagador.balance, 10 ether);
+    }
+
+    function test_reanudar_vuelveAAceptarCargas() public {
+        vm.startPrank(dueno);
+        pasarela.pausar();
+        vm.expectEmit(false, false, false, true, address(pasarela));
+        emit Pausable.Unpaused(dueno);
+        pasarela.reanudar();
+        vm.stopPrank();
+
+        assertFalse(pasarela.paused());
+        _cargar(REFERENCIA, 1 ether);
+        assertTrue(pasarela.pagada(REFERENCIA));
+    }
+
+    function test_pausarYReanudar_sinSerDuenoRevierten() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, pagador)
+        );
+        vm.prank(pagador);
+        pasarela.pausar();
+
+        vm.prank(dueno);
+        pasarela.pausar();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, pagador)
+        );
+        vm.prank(pagador);
+        pasarela.reanudar();
+        assertTrue(pasarela.paused());
+    }
+
+    function test_pausar_dosVecesRevierteYReanudarSinPausaTambien() public {
+        vm.expectRevert(Pausable.ExpectedPause.selector);
+        vm.prank(dueno);
+        pasarela.reanudar();
+
+        vm.startPrank(dueno);
+        pasarela.pausar();
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        pasarela.pausar();
+        vm.stopPrank();
+    }
+
+    function test_retirar_sigueFuncionandoConElContratoPausado() public {
+        _cargar(REFERENCIA, 1 ether);
+
+        vm.startPrank(dueno);
+        pasarela.pausar();
+        pasarela.retirar(payable(tesoreria), 1 ether);
+        vm.stopPrank();
+
+        assertEq(tesoreria.balance, 1 ether);
+        assertEq(address(pasarela).balance, 0);
     }
 }
