@@ -76,6 +76,47 @@ slither . --filter-paths "lib/|test/|script/" --fail-medium
 
 El CI falla con cualquier hallazgo Medium o High. Si aparece un falso positivo, se suprime en la línea con `// slither-disable-next-line <detector>` y un comentario que explique por qué, y se menciona en el PR.
 
+## Contrato desplegado
+
+| Red | Dirección | Explorador |
+|---|---|---|
+| Base Sepolia (84532) | `0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0` | [BaseScan](https://sepolia.basescan.org/address/0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0#code) (código verificado) |
+
+El back y el front leen la dirección de la variable de entorno `PASARELA_CARGAS_ADDRESS`. En `deployments/base-sepolia.json` están la dirección, el chain id, el dueño, la transacción y el bloque del deploy, y el ABI.
+
+Para integrarse con el contrato, el back tiene que leer el evento `CargaRegistrada` de los logs del recibo, filtrando por la dirección del contrato, y no mirar el `to` ni el `from` de la transacción. Una wallet con smart account (por ejemplo, MetaMask con transacciones delegadas) manda el pago a través de un relayer: el `to` y el `from` de la transacción son otros, pero el evento lo emite la pasarela con el pagador correcto.
+
+Pago de prueba: [`0xc7412f41…87bd8`](https://sepolia.basescan.org/tx/0xc7412f41338eb0c815bbd3983b1bc3d4ffb8ac15e409c6a70475273654487bd8), desde MetaMask, con la referencia `keccak256("prueba-1")` y 0.0001 ETH.
+
+## Deploy en Base Sepolia
+
+El deploy es manual, desde la máquina de quien despliega, nunca desde el CI.
+
+1. Importar la clave del deployer en un keystore cifrado de Foundry. La clave nunca va al `.env` ni al repo:
+
+   ```sh
+   cast wallet import deployer --interactive
+   ```
+
+2. Copiar `.env.example` a `.env` y completar el RPC de Base Sepolia, la API key v2 de Etherscan (sirve para BaseScan) y, si el dueño no es el deployer, `OWNER`.
+
+3. Desplegar con verificación. `forge` lee solo el `.env` de la raíz del proyecto, así que no hace falta cargarlo antes (y en fish, `source .env` falla):
+
+   ```sh
+   forge script script/Deploy.s.sol --rpc-url base_sepolia --account deployer --broadcast --verify
+   ```
+
+   El script pide la contraseña del keystore. El dueño inicial es `OWNER` si está definida y no vacía, y si no, la cuenta `deployer`.
+
+4. Actualizar `deployments/base-sepolia.json` y la tabla de [Contrato desplegado](#contrato-desplegado) con lo que deja `forge` en `broadcast/` (que no se commitea), y el ABI con `forge inspect PasarelaCargas abi --json`.
+
+5. Si la verificación automática falla, verificar a mano:
+
+   ```sh
+   forge verify-contract <direccion> src/PasarelaCargas.sol:PasarelaCargas \
+     --chain 84532 --constructor-args $(cast abi-encode "constructor(address)" <dueno>) --watch
+   ```
+
 ## Ramas
 
 Las ramas `PICA-xxx` salen de `dev` y los PRs van contra `dev`, que exige el CI en verde y una aprobación. `main` solo recibe entregas.
