@@ -1,52 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.38;
 
-import {Test} from "forge-std/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {PasarelaCargas} from "../src/PasarelaCargas.sol";
+import {EscenarioPasarela} from "./utils/EscenarioPasarela.sol";
+import {DestinoQueRechazaEth, DuenoQueReentraEnRetirar} from "./utils/Atacantes.sol";
 
-/// @dev Destino sin `receive` ni `fallback`: rechaza cualquier ETH.
-contract DestinoQueRechazaEth {}
-
-/// @dev Dueño y destino a la vez: al recibir el retiro intenta retirar de nuevo.
-contract DuenoQueReentraEnRetirar {
-    PasarelaCargas public pasarela;
-    uint256 public reentradas;
-
-    function apuntarA(PasarelaCargas pasarela_) external {
-        pasarela = pasarela_;
-    }
-
-    function retirar(uint256 monto) external {
-        pasarela.retirar(payable(address(this)), monto);
-    }
-
-    receive() external payable {
-        if (address(pasarela).balance >= msg.value) {
-            reentradas++;
-            pasarela.retirar(payable(address(this)), msg.value);
-        }
-    }
-}
-
-contract PasarelaCargasTest is Test {
-    event CargaRegistrada(bytes32 indexed referencia, address indexed pagador, uint256 monto);
-    event FondosRetirados(address indexed destino, uint256 monto);
-
-    PasarelaCargas internal pasarela;
-
-    address internal dueno = makeAddr("dueno");
-    address internal pagador = makeAddr("pagador");
-    address internal tesoreria = makeAddr("tesoreria");
-    address internal otroPagador = makeAddr("otroPagador");
+contract PasarelaCargasTest is EscenarioPasarela {
+    address internal pagador;
+    address internal otroPagador;
 
     bytes32 internal constant REFERENCIA = keccak256("carga-1");
 
-    function setUp() public {
-        pasarela = new PasarelaCargas(dueno);
-        vm.deal(pagador, 10 ether);
-        vm.deal(otroPagador, 10 ether);
+    function setUp() public override {
+        super.setUp();
+        pagador = _nuevoPagador("pagador");
+        otroPagador = _nuevoPagador("otroPagador");
     }
 
     function test_cargar_registraElPagoYEmiteElEvento() public {
@@ -66,8 +36,7 @@ contract PasarelaCargasTest is Test {
     }
 
     function _cargar(bytes32 referencia, uint256 monto) internal {
-        vm.prank(pagador);
-        pasarela.cargar{value: monto}(referencia);
+        _cargarDesde(pagador, referencia, monto);
     }
 
     function test_retirar_transfiereElMontoAlDestinoYEmiteElEvento() public {
@@ -368,5 +337,15 @@ contract PasarelaCargasTest is Test {
 
         assertEq(tesoreria.balance, 1 ether);
         assertEq(address(pasarela).balance, 0);
+    }
+
+    function test_renunciar_alContratoRevierteParaNoDejarLosFondosSinDueno() public {
+        _cargar(REFERENCIA, 1 ether);
+
+        vm.expectRevert(PasarelaCargas.RenunciaNoPermitida.selector);
+        vm.prank(dueno);
+        pasarela.renounceOwnership();
+
+        assertEq(pasarela.owner(), dueno);
     }
 }

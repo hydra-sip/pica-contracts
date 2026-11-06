@@ -42,10 +42,13 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Llegó ETH sin pasar por `cargar`, así que no se puede asociar a ninguna carga.
     error PagoSinReferencia();
 
+    /// @notice El dueño no puede renunciar: el contrato quedaría sin nadie que retire los fondos.
+    error RenunciaNoPermitida();
+
     constructor(address dueno) Ownable(dueno) {}
 
     /// @notice Paga la carga identificada por `referencia` con el ETH enviado.
-    function cargar(bytes32 referencia) external payable whenNotPaused nonReentrant {
+    function cargar(bytes32 referencia) external payable nonReentrant whenNotPaused {
         if (msg.value == 0) revert MontoCero();
         if (referencia == bytes32(0)) revert ReferenciaVacia();
         if (pagada[referencia]) revert ReferenciaYaPagada(referencia);
@@ -54,7 +57,7 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
     }
 
     /// @notice Transfiere `monto` de lo recaudado a `destino`.
-    function retirar(address payable destino, uint256 monto) external onlyOwner nonReentrant {
+    function retirar(address payable destino, uint256 monto) external nonReentrant onlyOwner {
         if (destino == address(0)) revert DestinoInvalido();
         if (monto == 0) revert MontoCero();
         if (monto > address(this).balance) revert SaldoInsuficiente(address(this).balance, monto);
@@ -71,6 +74,12 @@ contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
     /// @notice Vuelve a aceptar pagos.
     function reanudar() external onlyOwner {
         _unpause();
+    }
+
+    /// @notice Siempre revierte: sin dueño, lo recaudado quedaría bloqueado para siempre.
+    /// Para cambiar de dueño se usa el traspaso en dos pasos.
+    function renounceOwnership() public view override onlyOwner {
+        revert RenunciaNoPermitida();
     }
 
     /// @dev Rechaza el ETH enviado sin referencia.

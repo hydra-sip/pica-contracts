@@ -22,6 +22,7 @@ El contrato registra el monto en wei y no sabe nada de pesos: la cotización y l
 | `pausar()` / `reanudar()` | dueño | — | Frena o vuelve a aceptar los pagos |
 | `pagada(bytes32 referencia)` | cualquiera | — | Indica si la referencia ya se pagó |
 | `transferOwnership` / `acceptOwnership` | dueño / nuevo dueño | — | Traspaso del contrato en dos pasos |
+| `renounceOwnership()` | dueño | — | Siempre revierte: sin dueño, lo recaudado quedaría bloqueado |
 
 Eventos:
 
@@ -40,6 +41,7 @@ Errores:
 | `DestinoInvalido()` | Un retiro a la dirección cero |
 | `SaldoInsuficiente(saldo, monto)` | Un retiro mayor que el saldo |
 | `TransferenciaFallida()` | El destino del retiro rechazó el ETH |
+| `RenunciaNoPermitida()` | El dueño intenta renunciar al contrato |
 
 Seguridad: `Ownable2Step`, `Pausable` y `ReentrancyGuard` de OpenZeppelin, y el patrón checks-effects-interactions en `retirar`. El contrato no es actualizable.
 
