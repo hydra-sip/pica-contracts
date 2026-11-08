@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.38;
+
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+/// @title Pasarela de cargas de PICA
+/// @notice Recibe en ETH el pago de una carga de saldo identificada por la referencia que genera
+/// el back, y emite un evento que el back lee para acreditar la carga en la billetera.
+/// @dev El contrato registra el monto en wei; la cotización a pesos y la verificación del monto
+/// esperado son responsabilidad del back.
+contract PasarelaCargas is Ownable2Step, Pausable, ReentrancyGuard {
+    /// @notice Indica si una referencia ya fue pagada.
+    mapping(bytes32 referencia => bool) public pagada;
+
+    /// @notice Se emite cuando se paga una carga.
+    event CargaRegistrada(bytes32 indexed referencia, address indexed pagador, uint256 monto);
+
+    /// @notice Se emite cuando el dueño retira fondos.
+    event FondosRetirados(address indexed destino, uint256 monto);
+
+    /// @notice El monto de la carga o del retiro es 0.
+    error MontoCero();
+
+    /// @notice La carga no tiene referencia.
+    error ReferenciaVacia();
+
+    /// @notice La referencia ya fue pagada.
+    error ReferenciaYaPagada(bytes32 referencia);
+
+    /// @notice El destino de un retiro es la dirección cero.
+    error DestinoInvalido();
+
+    /// @notice El retiro pide más que el saldo del contrato.
+    error SaldoInsuficiente(uint256 saldo, uint256 monto);
+
+    /// @notice El destino rechazó la transferencia del retiro.
+    error TransferenciaFallida();
+
+    /// @notice Llegó ETH sin pasar por `cargar`, así que no se puede asociar a ninguna carga.
+    error PagoSinReferencia();
+
+    /// @notice El dueño no puede renunciar: el contrato quedaría sin nadie que retire los fondos.
+    error RenunciaNoPermitida();
+
+    constructor(address dueno) Ownable(dueno) {}
+
+    /// @notice Paga la carga identificada por `referencia` con el ETH enviado.
+    function cargar(bytes32 referencia) external payable nonReentrant whenNotPaused {
+        if (msg.value == 0) revert MontoCero();
+        if (referencia == bytes32(0)) revert ReferenciaVacia();
+        if (pagada[referencia]) revert ReferenciaYaPagada(referencia);
+        pagada[referencia] = true;
+        emit CargaRegistrada(referencia, msg.sender, msg.value);
+    }
+
+    /// @notice Transfiere `monto` de lo recaudado a `destino`.
+    function retirar(address payable destino, uint256 monto) external nonReentrant onlyOwner {
+        if (destino == address(0)) revert DestinoInvalido();
+        if (monto == 0) revert MontoCero();
+        if (monto > address(this).balance) revert SaldoInsuficiente(address(this).balance, monto);
+        emit FondosRetirados(destino, monto);
+        (bool ok,) = destino.call{value: monto}("");
+        if (!ok) revert TransferenciaFallida();
+    }
+
+    /// @notice Frena los pagos ante una emergencia. Los retiros siguen funcionando.
+    function pausar() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Vuelve a aceptar pagos.
+    function reanudar() external onlyOwner {
+        _unpause();
+    }
+
+    /// @notice Siempre revierte: sin dueño, lo recaudado quedaría bloqueado para siempre.
+    /// Para cambiar de dueño se usa el traspaso en dos pasos.
+    function renounceOwnership() public view override onlyOwner {
+        revert RenunciaNoPermitida();
+    }
+
+    /// @dev Rechaza el ETH enviado sin referencia.
+    receive() external payable {
+        revert PagoSinReferencia();
+    }
+
+    /// @dev Rechaza cualquier llamada desconocida, con o sin ETH.
+    fallback() external payable {
+        revert PagoSinReferencia();
+    }
+}
