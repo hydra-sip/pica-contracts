@@ -1,5 +1,7 @@
 # pica-contracts
 
+[![CI](https://github.com/hydra-sip/pica-contracts/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/hydra-sip/pica-contracts/actions/workflows/ci.yml)
+
 Contrato de la pasarela de cargas de PICA. Un usuario paga con ETH de prueba la carga de saldo que inició en la plataforma, y el contrato deja un registro verificable en la blockchain que el back usa para acreditar la carga en su billetera.
 
 Red: Base Sepolia. Herramientas: [Foundry](https://getfoundry.sh), Solidity 0.8.38 y OpenZeppelin Contracts v5.7.0.
@@ -9,9 +11,11 @@ Red: Base Sepolia. Herramientas: [Foundry](https://getfoundry.sh), Solidity 0.8.
 1. El back genera la **referencia** de la carga (un `bytes32`) y la guarda como pendiente, con el monto en pesos.
 2. El usuario llama a `cargar(referencia)` desde su wallet, enviando el ETH.
 3. El contrato marca la referencia como pagada y emite `CargaRegistrada(referencia, pagador, monto)`.
-4. El back lee ese evento en el recibo de la transacción, verifica el monto con la cotización fija y acredita la carga.
+4. El back lee ese evento en el recibo de la transacción, verifica que el monto sea el que fijó al iniciar la carga y, con 3 confirmaciones, la acredita.
 
 El contrato registra el monto en wei y no sabe nada de pesos: la cotización y la verificación del monto esperado son del back.
+
+El circuito completo (wallet, front, contrato, back y billetera), las decisiones de diseño y los riesgos que cubre están en [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Interfaz de `PasarelaCargas`
 
@@ -49,8 +53,10 @@ Seguridad: `Ownable2Step`, `Pausable` y `ReentrancyGuard` de OpenZeppelin, y el 
 
 Requisitos: Foundry (`foundryup`) y, para el análisis estático, [Slither](https://github.com/crytic/slither) (`pipx install slither-analyzer`).
 
+El desarrollo está en `dev`: `main` solo recibe entregas.
+
 ```sh
-git clone --recurse-submodules https://github.com/hydra-sip/pica-contracts.git
+git clone --branch dev --recurse-submodules https://github.com/hydra-sip/pica-contracts.git
 cd pica-contracts
 
 forge build
@@ -66,13 +72,19 @@ forge coverage --report summary --report lcov --no-match-coverage '^(test|script
 ./ci/verificar-cobertura.sh lcov.info
 ```
 
-El CI exige al menos el 90 % de líneas y de ramas sobre `src/`.
+El CI exige al menos el 90 % de líneas y de ramas sobre `src/`. Con la última versión del contrato (`src/` en `3eadcb4`), los 31 tests pasan y la cobertura es del 100 %:
+
+![Salida de forge coverage: 31 tests en verde y 100 % de líneas, sentencias, ramas y funciones en src/PasarelaCargas.sol](assets/forge-coverage.png)
 
 ### Slither
 
 ```sh
 slither . --filter-paths "lib/|test/|script/" --fail-medium
 ```
+
+Con la última versión del contrato, Slither encuentra un solo hallazgo, informativo: `low-level-calls`, por el `call` con el que `retirar` transfiere el ETH. Es intencional y está explicado en [ARCHITECTURE.md](ARCHITECTURE.md#riesgos-cubiertos).
+
+![Salida de Slither: un hallazgo informativo, low-level-calls en PasarelaCargas.retirar](assets/slither.png)
 
 El CI falla con cualquier hallazgo Medium o High. Si aparece un falso positivo, se suprime en la línea con `// slither-disable-next-line <detector>` y un comentario que explique por qué, y se menciona en el PR.
 
@@ -82,7 +94,7 @@ El CI falla con cualquier hallazgo Medium o High. Si aparece un falso positivo, 
 |---|---|---|
 | Base Sepolia (84532) | `0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0` | [BaseScan](https://sepolia.basescan.org/address/0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0#code) (código verificado) |
 
-El back y el front leen la dirección de la variable de entorno `PASARELA_CARGAS_ADDRESS`. En `deployments/base-sepolia.json` están la dirección, el chain id, el dueño, la transacción y el bloque del deploy, y el ABI.
+El back lee la dirección de la variable de entorno `PASARELA_CARGAS_ADDRESS` y se la pasa al front en cada carga, junto con el chain id. En `deployments/base-sepolia.json` están la dirección, el chain id, el dueño, la transacción y el bloque del deploy, y el ABI.
 
 Para integrarse con el contrato, el back tiene que leer el evento `CargaRegistrada` de los logs del recibo, filtrando por la dirección del contrato, y no mirar el `to` ni el `from` de la transacción. Una wallet con smart account (por ejemplo, MetaMask con transacciones delegadas) manda el pago a través de un relayer: el `to` y el `from` de la transacción son otros, pero el evento lo emite la pasarela con el pagador correcto.
 
