@@ -1,0 +1,47 @@
+name: CI
+
+permissions: {}
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  contratos:
+    name: contratos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Instalar Foundry
+        uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
+
+      - name: Formato
+        run: forge fmt --check
+
+      - name: Build
+        run: forge build --sizes
+
+      - name: Tests
+        run: forge test -vvv
+
+      - name: Cobertura
+        run: |
+          forge coverage --report lcov --report summary --no-match-coverage '^(test|script)/'
+          ./ci/verificar-cobertura.sh lcov.info
+
+      - name: Slither
+        uses: crytic/slither-action@b52cc1cbfee9ca3e8722dd5224299d16c9a6b80f # v0.4.2
+        with:
+          fail-on: medium
+          slither-args: --filter-paths "lib/|test/|script/"

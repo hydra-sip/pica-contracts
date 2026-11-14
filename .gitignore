@@ -1,0 +1,21 @@
+# Compiler files
+cache/
+out/
+
+# Commonly ignored directories
+.logs/
+.ignore/
+
+# Logs de broadcast de forge script: lo que necesitan el back y el front va en deployments/
+/broadcast/
+
+# Docs
+docs/
+
+# Dotenv file
+.env
+.env.*
+!.env.example
+
+# Cobertura
+lcov.info
