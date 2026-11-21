@@ -2,7 +2,10 @@
 
 [![CI](https://github.com/hydra-sip/pica-contracts/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/hydra-sip/pica-contracts/actions/workflows/ci.yml)
 
-Contrato de la pasarela de cargas de PICA. Un usuario paga con ETH de prueba la carga de saldo que inició en la plataforma, y el contrato deja un registro verificable en la blockchain que el back usa para acreditar la carga en su billetera.
+Contratos de la pasarela de PICA:
+
+- **`PasarelaCargas`**: un usuario paga con ETH de prueba la carga de saldo que inició en la plataforma, y el contrato deja un registro verificable en la blockchain que el back usa para acreditar la carga en su billetera.
+- **`PasarelaRetiros`**: el camino inverso. El usuario retira saldo a su wallet: el back firma un permiso y el usuario lo cobra en ETH desde su wallet. Ver [Interfaz de `PasarelaRetiros`](#interfaz-de-pasarelaretiros).
 
 Red: Base Sepolia. Herramientas: [Foundry](https://getfoundry.sh), Solidity 0.8.38 y OpenZeppelin Contracts v5.7.0.
 
@@ -49,6 +52,27 @@ Errores:
 
 Seguridad: `Ownable2Step`, `Pausable` y `ReentrancyGuard` de OpenZeppelin, y el patrón checks-effects-interactions en `retirar`. El contrato no es actualizable.
 
+## Interfaz de `PasarelaRetiros`
+
+1. El back descuenta el saldo del usuario y firma un permiso EIP-712 `Retiro(referencia, destino, monto, vence)` con la clave del **firmante**.
+2. El usuario llama a `cobrar(referencia, monto, vence, firma)` desde la wallet de `destino`.
+3. El contrato verifica la firma, que no se haya cobrado y que no haya vencido; marca la referencia, emite `RetiroCobrado(referencia, destino, monto)` y transfiere el ETH.
+4. El back lee el evento y, con 3 confirmaciones, confirma el retiro.
+
+| Función | Quién | Con el contrato pausado | Qué hace |
+|---|---|---|---|
+| `cobrar(bytes32 referencia, uint256 monto, uint256 vence, bytes firma)` | el destino del permiso | revierte | Paga el retiro a quien llama y emite `RetiroCobrado` |
+| `digestDelRetiro(referencia, destino, monto, vence)` | cualquiera | — | El hash EIP-712 que firma el back |
+| `cobrado(bytes32 referencia)` | cualquiera | — | Indica si el retiro ya se cobró |
+| `cambiarFirmante(address nuevo)` | dueño | funciona | Cambia la clave que firma; los permisos de la anterior dejan de valer |
+| `retirar(address destino, uint256 monto)` | dueño | funciona | Saca fondos que sobran y emite `FondosRetirados` |
+| `pausar()` / `reanudar()` | dueño | — | Frena o vuelve a aceptar cobros |
+| enviar ETH (`receive`) | cualquiera | funciona | Fondea el contrato y emite `Fondeado` |
+
+Errores: `MontoCero`, `ReferenciaVacia`, `DireccionInvalida`, `RetiroYaCobrado(referencia)`, `PermisoVencido(vence)`, `FirmaInvalida`, `SaldoInsuficiente(saldo, monto)`, `TransferenciaFallida`, `RenunciaNoPermitida` y `LlamadaDesconocida`.
+
+Seguridad: `Ownable2Step`, `Pausable`, `ReentrancyGuard`, `EIP712` y `SignatureChecker` de OpenZeppelin, y checks-effects-interactions en `cobrar` y `retirar`. Las decisiones y los riesgos están en [ARCHITECTURE.md](ARCHITECTURE.md#retiros-a-la-wallet).
+
 ## Desarrollo
 
 Requisitos: Foundry (`foundryup`) y, para el análisis estático, [Slither](https://github.com/crytic/slither) (`pipx install slither-analyzer`).
@@ -72,9 +96,9 @@ forge coverage --report summary --report lcov --no-match-coverage '^(test|script
 ./ci/verificar-cobertura.sh lcov.info
 ```
 
-El CI exige al menos el 90 % de líneas y de ramas sobre `src/`. Con la última versión del contrato (`src/` en `3eadcb4`), los 31 tests pasan y la cobertura es del 100 %:
+El CI exige al menos el 90 % de líneas y de ramas sobre `src/`. Con `PasarelaRetiros` (PICA-454), los 80 tests pasan y la cobertura de los dos contratos es del 100 %:
 
-![Salida de forge coverage: 31 tests en verde y 100 % de líneas, sentencias, ramas y funciones en src/PasarelaCargas.sol](assets/forge-coverage.png)
+![Salida de forge coverage: 80 tests en verde y 100 % de líneas, sentencias, ramas y funciones en src/PasarelaCargas.sol y src/PasarelaRetiros.sol](assets/forge-coverage.png)
 
 ### Slither
 
@@ -82,9 +106,9 @@ El CI exige al menos el 90 % de líneas y de ramas sobre `src/`. Con la última 
 slither . --filter-paths "lib/|test/|script/" --fail-medium
 ```
 
-Con la última versión del contrato, Slither encuentra un solo hallazgo, informativo: `low-level-calls`, por el `call` con el que `retirar` transfiere el ETH. Es intencional y está explicado en [ARCHITECTURE.md](ARCHITECTURE.md#riesgos-cubiertos).
+Con los dos contratos, Slither encuentra un solo tipo de hallazgo, informativo: `low-level-calls`, por el `call` con el que `retirar` y `cobrar` transfieren el ETH. Es intencional y está explicado en [ARCHITECTURE.md](ARCHITECTURE.md#riesgos-cubiertos).
 
-![Salida de Slither: un hallazgo informativo, low-level-calls en PasarelaCargas.retirar](assets/slither.png)
+![Salida de Slither: solo hallazgos informativos low-level-calls, en PasarelaCargas.retirar, PasarelaRetiros.cobrar y PasarelaRetiros.retirar](assets/slither.png)
 
 El CI falla con cualquier hallazgo Medium o High. Si aparece un falso positivo, se suprime en la línea con `// slither-disable-next-line <detector>` y un comentario que explique por qué, y se menciona en el PR.
 
@@ -128,6 +152,31 @@ El deploy es manual, desde la máquina de quien despliega, nunca desde el CI.
    forge verify-contract <direccion> src/PasarelaCargas.sol:PasarelaCargas \
      --chain 84532 --constructor-args $(cast abi-encode "constructor(address)" <dueno>) --watch
    ```
+
+### Deploy de `PasarelaRetiros`
+
+1. Crear la clave del firmante, que es la que usa el back. No necesita fondos:
+
+   ```sh
+   cast wallet new
+   ```
+
+   La dirección va en `FIRMANTE` del `.env`; la clave privada, solo en la variable `APP_CRIPTO_RETIROS_CLAVE_FIRMANTE` del back (Railway). Nunca en el repo.
+
+2. Desplegar con verificación, con el mismo keystore del deployer:
+
+   ```sh
+   forge script script/DeployRetiros.s.sol --rpc-url base_sepolia --account deployer --broadcast --verify
+   ```
+
+3. Fondear el contrato, por ejemplo con lo recaudado por `PasarelaCargas`:
+
+   ```sh
+   cast send 0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0 "retirar(address,uint256)" <direccion-retiros> <wei> \
+     --rpc-url base_sepolia --account deployer
+   ```
+
+4. Actualizar `deployments/base-sepolia.json` con la dirección, la transacción, el bloque y el ABI (`forge inspect PasarelaRetiros abi --json`), y pasarle la dirección al back en `PASARELA_RETIROS_ADDRESS`.
 
 ## Ramas
 

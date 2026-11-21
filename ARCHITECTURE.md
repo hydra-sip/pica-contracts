@@ -1,4 +1,6 @@
-# Arquitectura de la pasarela de cargas
+# Arquitectura de la pasarela
+
+La pasarela tiene dos contratos: `PasarelaCargas`, para cargar saldo pagando con la wallet, y `PasarelaRetiros`, para retirar saldo a la wallet. Los retiros están en [Retiros a la wallet](#retiros-a-la-wallet).
 
 Cómo se carga saldo en PICA pagando con una wallet: qué hace cada pieza, por qué está armada así y de qué riesgos se cuida. El contrato está en este repo; el back y el front, en [pica-back](https://github.com/hydra-sip/pica-back) y [pica-web](https://github.com/hydra-sip/pica-web).
 
@@ -96,8 +98,8 @@ sequenceDiagram
 
 ### El back solo lee la cadena
 
-- **Decisión.** El back consulta el recibo y el bloque actual por JSON-RPC (`eth_getTransactionReceipt`, `eth_getTransactionByHash`, `eth_blockNumber`). No tiene claves ni firma transacciones. Si el nodo no contesta en 5 segundos o da error, responde 503 `RED_NO_DISPONIBLE` y el front reintenta.
-- **Por qué.** El servidor no maneja ninguna clave privada que se pueda filtrar.
+- **Decisión.** El back consulta el recibo y el bloque actual por JSON-RPC (`eth_getTransactionReceipt`, `eth_getTransactionByHash`, `eth_blockNumber`). No manda transacciones. Si el nodo no contesta en 5 segundos o da error, responde 503 `RED_NO_DISPONIBLE` y el front reintenta.
+- **Por qué.** El servidor no necesita ETH ni manejar nonces y gas. Para las cargas no tiene ninguna clave; para los retiros tiene una sola, que firma permisos y no tiene fondos (ver [Retiros a la wallet](#retiros-a-la-wallet)).
 
 ### La dirección del contrato vive en el back
 
@@ -135,3 +137,54 @@ El análisis estático (Slither, en el CI) marca un solo hallazgo, informativo: 
 - **Pagar la referencia de otro.** La referencia es secreta hasta que su dueño manda el pago; desde ahí se ve en el mempool y alguien podría pagarla antes. Si paga el monto exacto, la carga se le acredita igual al dueño, y la transacción del dueño revierte sin cobrarle más que el gas. Si paga otro monto, el back lo rechaza y la referencia queda trabada, porque el contrato no acepta un segundo pago: el usuario tiene que iniciar otra carga. Quien lo hace pierde su ETH y no gana nada.
 - **Contrato no actualizable.** Un error se corrige desplegando otro contrato y cambiando `PASARELA_CARGAS_ADDRESS`. Las cargas pendientes del viejo se resuelven a mano.
 - **Un pago que no llega a confirmarse.** Si el usuario paga desde otro navegador y nunca vuelve a Mi billetera, la carga queda pendiente y el ETH en el contrato. Hoy se resuelve a mano; la reconciliación desde el back sería la solución de fondo.
+
+## Retiros a la wallet
+
+El camino inverso a la carga: el usuario pasa saldo de su billetera de PICA a su wallet y lo recibe en ETH. Lo pidió la cátedra en la clase del 14/11 (HU-610).
+
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant W as pica-web
+    participant B as pica-back
+    participant M as MetaMask
+    participant R as PasarelaRetiros
+    U->>W: Retirar $X a mi wallet
+    W->>B: POST /billetera/retiros/cripto (monto, wallet)
+    B->>B: topes y saldo, descuenta el saldo, retiro PENDIENTE
+    B-->>W: referencia, wei, vence y firma EIP-712
+    W->>M: cobrar(referencia, wei, vence, firma)
+    M->>R: transacción desde la wallet
+    R->>R: firma del firmante, sin cobrar, sin vencer
+    R-->>U: ETH
+    R-->>W: RetiroCobrado(referencia, wallet, wei)
+    W->>B: POST /billetera/retiros/cripto/{referencia}/confirmar (hash)
+    B->>B: lee el evento, 3 confirmaciones, retiro CONFIRMADO
+```
+
+Si el permiso vence sin cobrarse, el back le pregunta al contrato `cobrado(referencia)` y, si no se cobró, le devuelve el saldo al usuario.
+
+### Decisiones
+
+- **El usuario cobra; el contrato no empuja («pull over push»).** Es el patrón de la Guía de Solidity de la cátedra (sección 10): cada destinatario retira con su propia transacción. El back no manda transacciones, así que no necesita ETH para el gas ni llevar los nonces; el gas lo paga el usuario, que ya tiene ETH de prueba porque cargó con la wallet.
+- **El permiso es una firma EIP-712 del back.** Firma `Retiro(referencia, destino, monto, vence)` con el dominio `PasarelaRetiros`, versión `1`, el chain id y la dirección del contrato. Así una firma no sirve en otra red ni en otro contrato, y la wallet muestra los datos legibles. El back arma el hash a mano (keccak y secp256k1); `digestDelRetiro` y el test `PermisoDeReferenciaTest` fijan un permiso de ejemplo que los dos lados tienen que reproducir.
+- **El destino es quien llama.** `cobrar` no recibe la wallet: usa `msg.sender`, y la firma tiene que ser para esa wallet. Si alguien copia la transacción del mempool, no puede cobrar para él; y no hay una dirección arbitraria a la que el contrato le mande ETH.
+- **Un contrato aparte.** `PasarelaCargas` no cambia: ni su dirección ni la conciliación que lee sus eventos desde el bloque del deploy. `PasarelaRetiros` se fondea con lo recaudado (`PasarelaCargas.retirar` hacia su dirección) o con cualquier envío de ETH.
+- **Vencimiento de una hora.** Acota cuánto tiempo el saldo queda descontado sin cobrarse. `block.timestamp` lo puede mover un validador unos segundos, lo que no cambia nada con un plazo de una hora (Guía, 12.5).
+
+### Riesgos cubiertos
+
+| Riesgo | Cómo se cubre |
+|---|---|
+| **Cobrar dos veces** | `cobrado[referencia]` se marca antes de transferir; un segundo `cobrar` revierte con `RetiroYaCobrado`. El invariante `ningunRetiroSeCobraDosVeces` lo prueba con secuencias al azar. |
+| **Cobrar otro monto, otra wallet u otro vencimiento** | Cualquier cambio altera el hash firmado: `FirmaInvalida`. Probado con fuzz (`testFuzz_cobrar_otroMontoQueElFirmadoNuncaPaga`). |
+| **Cobrar un permiso vencido** | `PermisoVencido`; además, el back solo devuelve el saldo si el contrato dice que no se cobró. |
+| **Reentrancy** | `nonReentrant` y checks-effects-interactions; `test_cobrar_noPuedeReentrarParaCobrarOtroRetiro` lo intenta desde una wallet contrato. |
+| **Se filtra la clave del firmante** | El dueño pausa, cambia el firmante con `cambiarFirmante` y los permisos viejos dejan de valer (`test_unaFirmaFiltradaSeAnulaCambiandoElFirmante`). Lo máximo expuesto es lo que tenga el contrato. |
+| **El contrato sin fondos** | `SaldoInsuficiente`; el permiso sigue valiendo hasta que vence, así que se cobra apenas se fondea. |
+| **Una wallet que rechaza el ETH** | `cobrar` revierte entero (`TransferenciaFallida`) y el retiro queda sin cobrar. |
+
+### Riesgos que se aceptan
+
+- **La clave del firmante vive en el back** (variable de entorno en Railway). No tiene fondos y solo autoriza retiros que el back ya descontó del saldo, pero quien la tenga puede firmar retiros hasta vaciar el contrato. Por eso el contrato se fondea de a poco, no con todo lo recaudado.
+- **Sin gas sponsorship.** El usuario paga el gas del cobro. Con Account Abstraction (P3 de la cátedra) la plataforma podría pagarlo; queda como mejora.
