@@ -114,11 +114,12 @@ El CI falla con cualquier hallazgo Medium o High. Si aparece un falso positivo, 
 
 ## Contrato desplegado
 
-| Red | Dirección | Explorador |
-|---|---|---|
-| Base Sepolia (84532) | `0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0` | [BaseScan](https://sepolia.basescan.org/address/0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0#code) (código verificado) |
+| Contrato | Red | Dirección | Explorador |
+|---|---|---|---|
+| `PasarelaCargas` | Base Sepolia (84532) | `0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0` | [BaseScan](https://sepolia.basescan.org/address/0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0#code) (código verificado) |
+| `PasarelaRetiros` | Base Sepolia (84532) | `0xF662b727dD001C66c548eF23068d069D6B49b5CF` | [BaseScan](https://sepolia.basescan.org/address/0xF662b727dD001C66c548eF23068d069D6B49b5CF#code) (código verificado) |
 
-El back lee la dirección de la variable de entorno `PASARELA_CARGAS_ADDRESS` y se la pasa al front en cada carga, junto con el chain id. En `deployments/base-sepolia.json` están la dirección, el chain id, el dueño, la transacción y el bloque del deploy, y el ABI.
+El back lee las direcciones de las variables de entorno `PASARELA_CARGAS_ADDRESS` y `PASARELA_RETIROS_ADDRESS` y se las pasa al front en cada carga y en cada retiro, junto con el chain id. En `deployments/base-sepolia.json` están la red y el chain id y, en `contratos`, los datos de cada pasarela: la dirección, el dueño, la transacción y el bloque del deploy, el explorador y el ABI. `PasarelaRetiros` suma el firmante, que es la dirección de la clave con la que firma el back.
 
 Para integrarse con el contrato, el back tiene que leer el evento `CargaRegistrada` de los logs del recibo, filtrando por la dirección del contrato, y no mirar el `to` ni el `from` de la transacción. Una wallet con smart account (por ejemplo, MetaMask con transacciones delegadas) manda el pago a través de un relayer: el `to` y el `from` de la transacción son otros, pero el evento lo emite la pasarela con el pagador correcto.
 
@@ -144,7 +145,7 @@ El deploy es manual, desde la máquina de quien despliega, nunca desde el CI.
 
    El script pide la contraseña del keystore. El dueño inicial es `OWNER` si está definida y no vacía, y si no, la cuenta `deployer`.
 
-4. Actualizar `deployments/base-sepolia.json` y la tabla de [Contrato desplegado](#contrato-desplegado) con lo que deja `forge` en `broadcast/` (que no se commitea), y el ABI con `forge inspect PasarelaCargas abi --json`.
+4. Actualizar `contratos.PasarelaCargas` en `deployments/base-sepolia.json` y la tabla de [Contrato desplegado](#contrato-desplegado) con lo que deja `forge` en `broadcast/` (que no se commitea), y el ABI con `forge inspect PasarelaCargas abi --json`.
 
 5. Si la verificación automática falla, verificar a mano:
 
@@ -176,7 +177,7 @@ El deploy es manual, desde la máquina de quien despliega, nunca desde el CI.
      --rpc-url base_sepolia --account deployer
    ```
 
-4. Actualizar `deployments/base-sepolia.json` con la dirección, la transacción, el bloque y el ABI (`forge inspect PasarelaRetiros abi --json`), y pasarle la dirección al back en `PASARELA_RETIROS_ADDRESS`.
+4. Actualizar `contratos.PasarelaRetiros` en `deployments/base-sepolia.json` con la dirección, el dueño, el firmante, la transacción, el bloque y el ABI (`forge inspect PasarelaRetiros abi --json`), y la tabla de [Contrato desplegado](#contrato-desplegado). Pasarle la dirección al back en `PASARELA_RETIROS_ADDRESS`.
 
 ## Ramas
 
