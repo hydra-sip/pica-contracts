@@ -1,363 +1,939 @@
 {
   "red": "base-sepolia",
   "chainId": 84532,
-  "contrato": "PasarelaCargas",
-  "direccion": "0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0",
-  "dueno": "0x262DFbfA37436e5B99A53377e633509D1a9B301A",
-  "transaccionDeDeploy": "0xf05336a02f70447227777a6bb122e03034e5c4b3b42aa3f445f0e7732da01f96",
-  "bloque": 55324950,
-  "explorador": "https://sepolia.basescan.org/address/0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0",
-  "abi": [
-    {
-      "type": "constructor",
-      "inputs": [
+  "contratos": {
+    "PasarelaCargas": {
+      "direccion": "0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0",
+      "dueno": "0x262DFbfA37436e5B99A53377e633509D1a9B301A",
+      "transaccionDeDeploy": "0xf05336a02f70447227777a6bb122e03034e5c4b3b42aa3f445f0e7732da01f96",
+      "bloque": 55324950,
+      "explorador": "https://sepolia.basescan.org/address/0x36e633eDD1E79Ef2b9A3c6A099D873D52e44EDF0",
+      "abi": [
         {
-          "name": "dueno",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "fallback",
-      "stateMutability": "payable"
-    },
-    {
-      "type": "receive",
-      "stateMutability": "payable"
-    },
-    {
-      "type": "function",
-      "name": "acceptOwnership",
-      "inputs": [],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "cargar",
-      "inputs": [
-        {
-          "name": "referencia",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "payable"
-    },
-    {
-      "type": "function",
-      "name": "owner",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "pagada",
-      "inputs": [
-        {
-          "name": "referencia",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool",
-          "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "pausar",
-      "inputs": [],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "paused",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool",
-          "internalType": "bool"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "pendingOwner",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "reanudar",
-      "inputs": [],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "renounceOwnership",
-      "inputs": [],
-      "outputs": [],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "retirar",
-      "inputs": [
-        {
-          "name": "destino",
-          "type": "address",
-          "internalType": "address payable"
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "dueno",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
         },
         {
-          "name": "monto",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "transferOwnership",
-      "inputs": [
-        {
-          "name": "newOwner",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "event",
-      "name": "CargaRegistrada",
-      "inputs": [
-        {
-          "name": "referencia",
-          "type": "bytes32",
-          "indexed": true,
-          "internalType": "bytes32"
+          "type": "fallback",
+          "stateMutability": "payable"
         },
         {
-          "name": "pagador",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
+          "type": "receive",
+          "stateMutability": "payable"
         },
         {
-          "name": "monto",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "FondosRetirados",
-      "inputs": [
-        {
-          "name": "destino",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
+          "type": "function",
+          "name": "acceptOwnership",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
-          "name": "monto",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "OwnershipTransferStarted",
-      "inputs": [
-        {
-          "name": "previousOwner",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
+          "type": "function",
+          "name": "cargar",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "payable"
         },
         {
-          "name": "newOwner",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "OwnershipTransferred",
-      "inputs": [
-        {
-          "name": "previousOwner",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "newOwner",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "Paused",
-      "inputs": [
-        {
-          "name": "account",
-          "type": "address",
-          "indexed": false,
-          "internalType": "address"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
-      "name": "Unpaused",
-      "inputs": [
-        {
-          "name": "account",
-          "type": "address",
-          "indexed": false,
-          "internalType": "address"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "error",
-      "name": "DestinoInvalido",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "EnforcedPause",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "ExpectedPause",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "MontoCero",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "OwnableInvalidOwner",
-      "inputs": [
-        {
+          "type": "function",
           "name": "owner",
-          "type": "address",
-          "internalType": "address"
-        }
-      ]
-    },
-    {
-      "type": "error",
-      "name": "OwnableUnauthorizedAccount",
-      "inputs": [
-        {
-          "name": "account",
-          "type": "address",
-          "internalType": "address"
-        }
-      ]
-    },
-    {
-      "type": "error",
-      "name": "PagoSinReferencia",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "ReentrancyGuardReentrantCall",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "ReferenciaVacia",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "ReferenciaYaPagada",
-      "inputs": [
-        {
-          "name": "referencia",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ]
-    },
-    {
-      "type": "error",
-      "name": "RenunciaNoPermitida",
-      "inputs": []
-    },
-    {
-      "type": "error",
-      "name": "SaldoInsuficiente",
-      "inputs": [
-        {
-          "name": "saldo",
-          "type": "uint256",
-          "internalType": "uint256"
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
         },
         {
-          "name": "monto",
-          "type": "uint256",
-          "internalType": "uint256"
+          "type": "function",
+          "name": "pagada",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "pausar",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "paused",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "pendingOwner",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "reanudar",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "renounceOwnership",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "retirar",
+          "inputs": [
+            {
+              "name": "destino",
+              "type": "address",
+              "internalType": "address payable"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "transferOwnership",
+          "inputs": [
+            {
+              "name": "newOwner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "event",
+          "name": "CargaRegistrada",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "indexed": true,
+              "internalType": "bytes32"
+            },
+            {
+              "name": "pagador",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "FondosRetirados",
+          "inputs": [
+            {
+              "name": "destino",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "OwnershipTransferStarted",
+          "inputs": [
+            {
+              "name": "previousOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "newOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "OwnershipTransferred",
+          "inputs": [
+            {
+              "name": "previousOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "newOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "Paused",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "indexed": false,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "Unpaused",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "indexed": false,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "error",
+          "name": "DestinoInvalido",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "EnforcedPause",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ExpectedPause",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "MontoCero",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "OwnableInvalidOwner",
+          "inputs": [
+            {
+              "name": "owner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "OwnableUnauthorizedAccount",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "PagoSinReferencia",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ReentrancyGuardReentrantCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ReferenciaVacia",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ReferenciaYaPagada",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "RenunciaNoPermitida",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "SaldoInsuficiente",
+          "inputs": [
+            {
+              "name": "saldo",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "TransferenciaFallida",
+          "inputs": []
         }
       ]
     },
-    {
-      "type": "error",
-      "name": "TransferenciaFallida",
-      "inputs": []
+    "PasarelaRetiros": {
+      "direccion": "0xF662b727dD001C66c548eF23068d069D6B49b5CF",
+      "dueno": "0x262DFbfA37436e5B99A53377e633509D1a9B301A",
+      "firmante": "0xe7E1b26A1EB9263926A0c4EAD77902851AE6C31d",
+      "transaccionDeDeploy": "0x80e0e62fd5a253b8e7196dc9a5617536c04d13cc2dbda3819afc050c5d78491d",
+      "bloque": 64090690,
+      "explorador": "https://sepolia.basescan.org/address/0xF662b727dD001C66c548eF23068d069D6B49b5CF",
+      "abi": [
+        {
+          "type": "constructor",
+          "inputs": [
+            {
+              "name": "dueno",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "firmante_",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "fallback",
+          "stateMutability": "payable"
+        },
+        {
+          "type": "receive",
+          "stateMutability": "payable"
+        },
+        {
+          "type": "function",
+          "name": "TIPO_RETIRO",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "acceptOwnership",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "cambiarFirmante",
+          "inputs": [
+            {
+              "name": "nuevo",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "cobrado",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "cobrar",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "vence",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "firma",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "digestDelRetiro",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "destino",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "vence",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "eip712Domain",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "fields",
+              "type": "bytes1",
+              "internalType": "bytes1"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "version",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "salt",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            },
+            {
+              "name": "extensions",
+              "type": "uint256[]",
+              "internalType": "uint256[]"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "firmante",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "owner",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "pausar",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "paused",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "pendingOwner",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "reanudar",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "renounceOwnership",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "retirar",
+          "inputs": [
+            {
+              "name": "destino",
+              "type": "address",
+              "internalType": "address payable"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "transferOwnership",
+          "inputs": [
+            {
+              "name": "newOwner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "event",
+          "name": "EIP712DomainChanged",
+          "inputs": [],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "FirmanteCambiado",
+          "inputs": [
+            {
+              "name": "anterior",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "nuevo",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "Fondeado",
+          "inputs": [
+            {
+              "name": "origen",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "FondosRetirados",
+          "inputs": [
+            {
+              "name": "destino",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "OwnershipTransferStarted",
+          "inputs": [
+            {
+              "name": "previousOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "newOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "OwnershipTransferred",
+          "inputs": [
+            {
+              "name": "previousOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "newOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "Paused",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "indexed": false,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "RetiroCobrado",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "indexed": true,
+              "internalType": "bytes32"
+            },
+            {
+              "name": "destino",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
+          "name": "Unpaused",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "indexed": false,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "error",
+          "name": "DireccionInvalida",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "EnforcedPause",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ExpectedPause",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "FirmaInvalida",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "InvalidShortString",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "LlamadaDesconocida",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "MontoCero",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "OwnableInvalidOwner",
+          "inputs": [
+            {
+              "name": "owner",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "OwnableUnauthorizedAccount",
+          "inputs": [
+            {
+              "name": "account",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "PermisoVencido",
+          "inputs": [
+            {
+              "name": "vence",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "ReentrancyGuardReentrantCall",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "ReferenciaVacia",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "RenunciaNoPermitida",
+          "inputs": []
+        },
+        {
+          "type": "error",
+          "name": "RetiroYaCobrado",
+          "inputs": [
+            {
+              "name": "referencia",
+              "type": "bytes32",
+              "internalType": "bytes32"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "SaldoInsuficiente",
+          "inputs": [
+            {
+              "name": "saldo",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "monto",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "StringTooLong",
+          "inputs": [
+            {
+              "name": "str",
+              "type": "string",
+              "internalType": "string"
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "name": "TransferenciaFallida",
+          "inputs": []
+        }
+      ]
     }
-  ]
+  }
 }

@@ -2,6 +2,7 @@
 pragma solidity 0.8.38;
 
 import {PasarelaCargas} from "../../src/PasarelaCargas.sol";
+import {PasarelaRetiros} from "../../src/PasarelaRetiros.sol";
 
 /// @dev Destino sin `receive` ni `fallback`: rechaza cualquier ETH.
 contract DestinoQueRechazaEth {}
@@ -36,5 +37,38 @@ contract DestinoQueReentraEnCargar {
 
     receive() external payable {
         pasarela.cargar{value: msg.value}(REFERENCIA);
+    }
+}
+
+/// @dev Wallet de un usuario que, al recibir su retiro, intenta cobrar otro permiso válido.
+contract DestinoQueReentraEnCobrar {
+    PasarelaRetiros internal immutable retiros;
+    bytes32 internal referencia;
+    uint256 internal monto;
+    uint256 internal vence;
+    bytes internal firma;
+
+    constructor(PasarelaRetiros retiros_) {
+        retiros = retiros_;
+    }
+
+    function prepararSegundoCobro(
+        bytes32 referencia_,
+        uint256 monto_,
+        uint256 vence_,
+        bytes calldata firma_
+    ) external {
+        referencia = referencia_;
+        monto = monto_;
+        vence = vence_;
+        firma = firma_;
+    }
+
+    function cobrar(bytes32 ref, uint256 monto_, uint256 vence_, bytes calldata firma_) external {
+        retiros.cobrar(ref, monto_, vence_, firma_);
+    }
+
+    receive() external payable {
+        retiros.cobrar(referencia, monto, vence, firma);
     }
 }
